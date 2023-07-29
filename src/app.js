@@ -17,6 +17,52 @@ mongoose.connect(mongodbURI, {
   useUnifiedTopology: true,
 });
 
+const postSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  location: String,
+  job_type: String,
+  pay_rate_per_hr_dollar: Number,
+  skills: [{type: String}],
+  liked_by: [{type: String}],
+  viewed_by: [{type: String}],
+  id: Number,
+  user_id: Number,
+  post_by_username: String,
+  post_by_fullname: String,
+  post_date: String,
+  comments: [{type: String}],
+});
+
+const Post = mongoose.model("posts", postSchema);
+
+Post.createCollection()
+  .then((col) => {
+    console.log("Collection", col, "Created");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+Post.create({
+  title: "PHP Developer Required",
+  description: "For a client project PHP Developer is required",
+  location: "Butwal",
+  job_type: "Full Time",
+  pay_rate_per_hr_dollar: 45.0,
+  skills: ["PHP", "JS", "HTML"],
+  liked_by: ["test111", "test1", "test123"],
+  viewed_by: ["test111", "test1", "test123"],
+  id: 2,
+  user_id: 1,
+  post_by_username: "user1",
+  post_by_fullname: "Mathew Hayden",
+  post_date: "2023-06-10T09:24:07.659034",
+  comments: [],
+}).then(() => {
+  console.log("Posts created");
+});
+
 const userSchema = new mongoose.Schema({
   email: String,
   username: String,
@@ -56,7 +102,7 @@ User.create({
   followers: ["username123", "user234", "user543"],
   followings: ["username123", "user234", "user543", "user555"],
 }).then(() => {
-    console.log("User created");
+  console.log("User created");
 });
 
 // local host: http://localhost:5000
