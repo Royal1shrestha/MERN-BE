@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
+const bodyParser = require("body-parser")
 
 const mongoose = require("mongoose");
 
@@ -9,6 +10,7 @@ const app = express();
 const { type } = require("os");
 
 app.use(cors());
+app.use(bodyParser.json());
 
 const PORT = 5000;
 
@@ -103,7 +105,7 @@ Post.createCollection()
 
 const userSchema = new mongoose.Schema({
   email: String,
-  username: String,
+  username: {type: String, unique: true},
   fullname: String,
   title: String,
   add_title: String,
@@ -111,6 +113,7 @@ const userSchema = new mongoose.Schema({
   address: String,
   job_type: String,
   id: Number,
+  password: String,
   is_active: Boolean,
   followers: [{ type: String }],
   followings: [{ type: String }],
@@ -118,23 +121,16 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("user", userSchema);
 
-// User.createCollection()
-//   .then((col) => {
-//     console.log("Collection", col, "Created");
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
-
 // local host: http://localhost:5000
 app.get("/", (req, resp) => {
   resp.status(200).send({ status: "OK", message: "App is running" });
 });
 
 // read file and send content of file as response
-app.get("/api/v1/posts", (req, resp) => {
-  // const posts = await Post.findById({id: 2,id: 3,id: 4});
-  const posts = fs.readFileSync("./data/posts.json", "utf-8").toString();
+app.get("/api/v1/posts", async (req, resp) => {
+  // const posts = fs.readFileSync("./data/posts.json", "utf-8").toString();
+  const postIds = [2, 3, 4];
+  const posts = await Post.find({ id: postIds});
   resp.status(200).send(posts);
 });
 
@@ -145,23 +141,41 @@ app.get("/api/v1/user", async (req, resp) => {
   resp.status(200).send(user[0]);
 });
 
+app.post("/api/v1/login", async (req, resp) => {
+  const user = await User.findOne({ username: req.body.username, password: req.body.password, is_active: true,});
+  if(user) {
+    resp.status(200).send({message: "Login successful"});
+  }
+  else{
+    resp.status(404).send({error: "Invalid username or password"});
+  }
+});
+
 app.post("/api/v1/user", async (req, resp) => {
   const lastUser = await User.findOne({}, null, { sort: { id: -1 } });
+
+  const{ username, email, fullname, title, job_type, skills, address, password } = req.body;
+  
+  const usernameUser = await User.findOne({username});
+  if(usernameUser){
+    return resp.status(404).send({error: "Username already taken."});
+  }
 
   let id = 1;
   if (lastUser) {
     id = lastUser.id + 1;
   }
   const newUser = {
-    email: "testuser@test.com",
-    username: "user1",
-    fullname: "Royal Shrestha",
-    title: "Software Developer",
-    add_title: "Graphic Designer",
-    skills: ["JS", "Python", "JAVA"],
-    address: "Kathmandu, Nepal",
-    job_type: "Full Time",
-    id: id,
+    // email: email,
+    email,
+    username,
+    fullname,
+    title,
+    skills,
+    address,
+    job_type,
+    id,
+    password,
     is_active: true,
     followers: [],
     followings: [],
@@ -169,6 +183,9 @@ app.post("/api/v1/user", async (req, resp) => {
   User.create(newUser).then((createdUser) => {
     console.log("User Created");
     resp.status(200).send(createdUser);
+  }).catch((err) =>{
+    console.error(err);
+    resp.status(500).send({error: "Can not process your request."});
   });
 });
 
