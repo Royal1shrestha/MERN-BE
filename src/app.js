@@ -1,7 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const cors = require("cors");
-const bodyParser = require("body-parser")
+const bodyParser = require("body-parser");
 
 const mongoose = require("mongoose");
 
@@ -21,30 +21,28 @@ mongoose.connect(mongodbURI, {
   useUnifiedTopology: true,
 });
 
-const postSchema = new mongoose.Schema(
-  {
-    title: String,
-    description: String,
-    location: String,
-    job_type: String,
-    pay_rate_per_hr_dollar: Number,
-    skills: [{ type: String }],
-    liked_by: [{ type: String }],
-    viewed_by: [{ type: String }],
-    id: Number,
-    user_id: Number,
-    post_by_username: String,
-    post_by_fullname: String,
-    post_date: String,
-    comments: [{ type: String }],
-  }
-);
+const postSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  location: String,
+  job_type: String,
+  pay_rate_per_hr_dollar: Number,
+  skills: [{ type: String }],
+  liked_by: [{ type: String }],
+  viewed_by: [{ type: String }],
+  id: Number,
+  user_id: Number,
+  post_by_username: String,
+  post_by_fullname: String,
+  post_date: String,
+  comments: [{ type: String }],
+});
 
 const Post = mongoose.model("posts", postSchema);
 
 Post.createCollection()
   .then((col) => {
-    console.log("Collection", col , "Created");
+    console.log("Collection", col, "Created");
   })
   .catch((err) => {
     console.log(err);
@@ -105,7 +103,7 @@ Post.createCollection()
 
 const userSchema = new mongoose.Schema({
   email: String,
-  username: {type: String, unique: true},
+  username: { type: String, unique: true },
   fullname: String,
   title: String,
   add_title: String,
@@ -130,35 +128,47 @@ app.get("/", (req, resp) => {
 app.get("/api/v1/posts", async (req, resp) => {
   // const posts = fs.readFileSync("./data/posts.json", "utf-8").toString();
   const postIds = [2, 3, 4];
-  const posts = await Post.find({ id: postIds});
+  const posts = await Post.find({ id: postIds });
   resp.status(200).send(posts);
 });
 
 // read file and send userdata as response
 app.get("/api/v1/user", async (req, resp) => {
   // const user = fs.readFileSync("./data/user.json", "utf-8").toString();
-  const user = await User.find({id: 1});
+  const user = await User.find({ id: 1 });
   resp.status(200).send(user[0]);
 });
 
 app.post("/api/v1/login", async (req, resp) => {
-  const user = await User.findOne({ username: req.body.username, password: req.body.password, is_active: true,});
-  if(user) {
-    resp.status(200).send({message: "Login successful"});
-  }
-  else{
-    resp.status(404).send({error: "Invalid username or password"});
+  const user = await User.findOne({
+    username: req.body.username,
+    password: req.body.password,
+    is_active: true,
+  });
+  if (user) {
+    resp.status(200).send({ message: "Login successful", data: user });
+  } else {
+    resp.status(400).send({ error: "Invalid username or password" });
   }
 });
 
 app.post("/api/v1/user", async (req, resp) => {
   const lastUser = await User.findOne({}, null, { sort: { id: -1 } });
 
-  const{ username, email, fullname, title, job_type, skills, address, password } = req.body;
-  
-  const usernameUser = await User.findOne({username});
-  if(usernameUser){
-    return resp.status(404).send({error: "Username already taken."});
+  const {
+    username,
+    email,
+    fullname,
+    title,
+    job_type,
+    skills,
+    address,
+    password,
+  } = req.body;
+
+  const usernameUser = await User.findOne({ username });
+  if (usernameUser) {
+    return resp.status(404).send({ error: "Username already taken." });
   }
 
   let id = 1;
@@ -180,13 +190,15 @@ app.post("/api/v1/user", async (req, resp) => {
     followers: [],
     followings: [],
   };
-  User.create(newUser).then((createdUser) => {
-    console.log("User Created");
-    resp.status(200).send(createdUser);
-  }).catch((err) =>{
-    console.error(err);
-    resp.status(500).send({error: "Can not process your request."});
-  });
+  User.create(newUser)
+    .then((createdUser) => {
+      console.log("User Created");
+      resp.status(200).send(createdUser);
+    })
+    .catch((err) => {
+      console.error(err);
+      resp.status(500).send({ error: "Can not process your request." });
+    });
 });
 
 app.listen(PORT, () => {
